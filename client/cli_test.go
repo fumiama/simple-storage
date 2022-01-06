@@ -19,3 +19,14 @@ func TestSet(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestListFiles(t *testing.T) {
+	cli := NewClient("http://127.0.0.1:8888", "00010203040506070809000102030405")
+	if cli == nil {
+		t.Fatal("cli is nil")
+	}
+	_, err := cli.ListFiles("data")
+	if err != nil {
+		t.Fatal(err)
+	}
+}

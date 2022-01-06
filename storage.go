@@ -12,6 +12,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/fumiama/simple-storage/helper"
 )
@@ -43,6 +44,10 @@ func handle(route string, path string) error {
 
 	fmt.Println("perparing route", route, "with", len(dir), "files in path", path)
 	if len(dir) > n {
+		ts := time.Now().UnixNano()
+		_, _ = os.ReadFile(path + "/" + dir[0].Name())
+		delay := (time.Now().UnixNano() - ts) / int64(n)
+		fmt.Println("delay:", delay, "ns")
 		for ; i < len(dir)-p; i += p {
 			fmt.Println("perparing", i, "to", i+p)
 			wg.Add(1)
@@ -61,6 +66,7 @@ func handle(route string, path string) error {
 				}
 				wg.Done()
 			}(dir[i : i+p])
+			time.Sleep(time.Duration(delay))
 		}
 	}
 	fmt.Println("perparing", i, "to", len(dir))
