@@ -1,13 +1,21 @@
 # simple-storage
 Simple Golang storage server
 
+## Command Line
+```bash
+./simple-storage -l ip:port -k authkeyhex -p /route1=/path1 -p /route2=/path2 ...
+```
+- **-l**: listening ip&port
+- **-k**: 16 bytes hex key for TEA encryption
+- **-p**: add a route to serve files under path
+
 ## Query
 
 ```bash
 http://server.com/routex?arg=[argument]&name=[filename]&key=[filemd5]
 ```
 - **argument**: has/lst/get/set
-- **name**: filename to has/lst/get
+- **name**: filename to has/lst/get/set
 - **key**: md5 of file to set
 
 #### Request
