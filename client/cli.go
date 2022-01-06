@@ -58,7 +58,7 @@ func (c *Client) IsFileExist(folder, name string) (bool, *[16]byte, error) {
 }
 
 // ListFiles return map[name]md5, error
-func (c *Client) ListFiles(folder, name string) (m map[string][16]byte, err error) {
+func (c *Client) ListFiles(folder string) (m map[string][16]byte, err error) {
 	u := c.apiurl + "/" + folder + "?arg=lst"
 	r, err := http.Get(u)
 	if err != nil {
