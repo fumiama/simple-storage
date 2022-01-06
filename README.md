@@ -6,19 +6,19 @@ Simple Golang storage server
 ```bash
 http://server.com/routex?arg=[argument]&name=[filename]&key=[filemd5]
 ```
-- *argument*: has/lst/get/set
-- *name*: filename to has/lst/get
-- *key*: md5 of file to set
+- **argument**: has/lst/get/set
+- **name**: filename to has/lst/get
+- **key**: md5 of file to set
 
 #### Request
-- *set*: post method with `TEA` encrypted data in body
-- *others*: get method with query above
+- **set**: post method with `TEA` encrypted data in body
+- **others**: get method with query above
 
 #### Response
-- *has*: 17 bytes data, the first byte is `00`(not exist) or `01`(exist), others are file md5
-- *lst*: json object of {filename: md5 bytes}
-- *get*: file data in body and `md5` in header
-- *set*: `success` or `exist`
+- **has**: 17 bytes data, the first byte is `00`(not exist) or `01`(exist), others are file md5
+- **lst**: json object of {filename: md5 bytes}
+- **get**: file data in body and `md5` in header
+- **set**: `success` or `exist`
 
 ## Client
 > There is a client at `./client`, you should use it to access simple-storage
