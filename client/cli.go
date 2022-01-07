@@ -57,6 +57,29 @@ func (c *Client) IsFileExist(folder, name string) (bool, *[16]byte, error) {
 	return true, (*[16]byte)(unsafe.Pointer(&b)), nil
 }
 
+// IsSecureFileExist return status, md5, error
+func (c *Client) IsSecureFileExist(folder, name string) (bool, *[16]byte, error) {
+	u := c.apiurl + "/" + folder + "?arg=has&name=" + url.QueryEscape(name)
+	r, err := http.Get(u)
+	if err != nil {
+		return false, nil, err
+	}
+	defer r.Body.Close()
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return false, nil, err
+	}
+	b = c.tea.Decrypt(b)
+	if len(b) != 17 {
+		return false, nil, os.ErrInvalid
+	}
+	if b[0] == 0 {
+		return false, nil, nil
+	}
+	b = b[1:]
+	return true, (*[16]byte)(unsafe.Pointer(&b)), nil
+}
+
 // ListFiles return map[name]md5, error
 func (c *Client) ListFiles(folder string) (m map[string][16]byte, err error) {
 	u := c.apiurl + "/" + folder + "?arg=lst"
@@ -69,6 +92,24 @@ func (c *Client) ListFiles(folder string) (m map[string][16]byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	m = make(map[string][16]byte)
+	err = json.Unmarshal(b, &m)
+	return
+}
+
+// ListSecureFiles return map[name]md5, error
+func (c *Client) ListSecureFiles(folder string) (m map[string][16]byte, err error) {
+	u := c.apiurl + "/" + folder + "?arg=lst"
+	r, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	b = c.tea.Decrypt(b)
 	m = make(map[string][16]byte)
 	err = json.Unmarshal(b, &m)
 	return
@@ -99,6 +140,36 @@ func (c *Client) GetFile(folder, name string) ([]byte, *[16]byte, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
+	return b, (*[16]byte)(unsafe.Pointer(&ms)), nil
+}
+
+// GetSecureFile return data, md5, error
+func (c *Client) GetSecureFile(folder, name string) ([]byte, *[16]byte, error) {
+	u := c.apiurl + "/" + folder + "?arg=get&name=" + url.QueryEscape(name)
+	r, err := http.Get(u)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	m := r.Header.Get("md5")
+	if m == "" {
+		return nil, nil, os.ErrInvalid
+	}
+	ms, err := url.QueryUnescape(m)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(ms) != 16 {
+		return nil, nil, os.ErrInvalid
+	}
+
+	defer r.Body.Close()
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	b = c.tea.Decrypt(b)
 
 	return b, (*[16]byte)(unsafe.Pointer(&ms)), nil
 }

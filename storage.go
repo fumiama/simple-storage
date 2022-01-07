@@ -18,7 +18,8 @@ import (
 )
 
 // handle 无法防范中间人攻击，请在安全内网使用
-func handle(route string, path string) error {
+// isprotected: 在所有 arg 都应用 tea 加密
+func handle(route, path string, isprotected bool) error {
 	s, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -42,7 +43,7 @@ func handle(route string, path string) error {
 		p = 1
 	}
 
-	fmt.Println("perparing route", route, "with", len(dir), "files in path", path)
+	fmt.Println("perparing route", route, "with", len(dir), "files in path", path, "protected:", isprotected)
 	if len(dir) > n {
 		ts := time.Now().UnixNano()
 		_, _ = os.ReadFile(path + "/" + dir[0].Name())
@@ -107,6 +108,10 @@ func handle(route string, path string) error {
 				retb[0] = 1
 				copy(retb[1:], m[:])
 			}
+			if isprotected {
+				rw.Write(mytea.Encrypt(retb))
+				return
+			}
 			rw.Write(retb)
 			return
 		case "lst":
@@ -115,6 +120,10 @@ func handle(route string, path string) error {
 			infolk.RUnlock()
 			if err != nil {
 				http.Error(rw, "500 Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if isprotected {
+				rw.Write(mytea.Encrypt(dat))
 				return
 			}
 			rw.Write(dat)
@@ -136,6 +145,15 @@ func handle(route string, path string) error {
 				return
 			}
 			rw.Header().Add("md5", url.QueryEscape(helper.BytesToString(m[:])))
+			if isprotected {
+				data, err := os.ReadFile(path + "/" + name)
+				if err != nil {
+					http.Error(rw, "500 Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				rw.Write(mytea.Encrypt(data))
+				return
+			}
 			http.ServeFile(rw, r, path+"/"+name)
 			return
 		case "set":

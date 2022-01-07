@@ -3,11 +3,12 @@ Simple Golang storage server
 
 ## Command Line
 ```bash
-./simple-storage -l ip:port -k authkeyhex -p /route1=/path1 -p /route2=/path2 ...
+./simple-storage -l ip:port -k authkeyhex -p /route1=/path1 -s /route2=/path2 ...
 ```
 - **-l**: listening ip&port
 - **-k**: 16 bytes hex key for TEA encryption
-- **-p**: add a route to serve files under path
+- **-p**: add a set-encrypted route to serve files under path
+- **-s**: add an all-encrypted route to serve files under path
 
 ## Query
 
@@ -28,6 +29,12 @@ http://server.com/routex?arg=[argument]&name=[filename]&key=[filemd5]
 - **get**: file data in body and `md5` in header
 - **set**: `success` or `exist`
 
+#### Secure Response
+- **has**: tea-encrypted data
+- **lst**: tea-encrypted data
+- **get**: tea-encrypted data in body and `md5` in header
+- **set**: `success` or `exist`
+
 ## Client
 > There is a client at `./client`, you should use it to access simple-storage
 
@@ -46,4 +53,17 @@ func (c *Client) GetFile(folder, name string) ([]byte, *[16]byte, error)
 
 // SetFile return error
 func (c *Client) SetFile(folder, name string, data []byte) error
+```
+
+> secure version
+
+```go
+// IsFileExist return status, md5, error
+func (c *Client) IsSecureFileExist(folder, name string) (bool, *[16]byte, error)
+
+// ListFiles return map[name]md5, error
+func (c *Client) ListSecureFiles(folder string) (m map[string][16]byte, err error)
+
+// GetFile return data, md5, error
+func (c *Client) GetSecureFile(folder, name string) ([]byte, *[16]byte, error)
 ```
