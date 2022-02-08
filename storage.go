@@ -44,6 +44,11 @@ func handle(route, path string, isprotected bool) error {
 	}
 
 	fmt.Println("perparing route", route, "with", len(dir), "files in path", path, "protected:", isprotected)
+	err = db.Create(route[1:], &filemd5{})
+	if err != nil {
+		panic(err)
+	}
+
 	if len(dir) > n {
 		ts := time.Now().UnixNano()
 		_, _ = os.ReadFile(path + "/" + dir[0].Name())
@@ -55,11 +60,30 @@ func handle(route, path string, isprotected bool) error {
 			go func(dir []fs.DirEntry) {
 				for _, e := range dir {
 					if !e.IsDir() {
-						data, err := os.ReadFile(path + "/" + e.Name())
-						if err != nil {
-							continue
+						var fmd5 filemd5
+						dbmu.RLock()
+						err = db.Find(route[1:], &fmd5, "where name="+e.Name())
+						dbmu.RUnlock()
+						var m [16]byte
+						if err == nil {
+							_, err = hex.Decode(m[:], helper.StringToBytes(fmd5.Md5))
+							if err != nil {
+								panic(err)
+							}
+						} else {
+							data, err := os.ReadFile(path + "/" + e.Name())
+							if err != nil {
+								continue
+							}
+							m = md5.Sum(data)
+							fmd5.Name = e.Name()
+							fmd5.Md5 = hex.EncodeToString(m[:])
+							go func() {
+								dbmu.Lock()
+								db.Insert(route[1:], &fmd5)
+								dbmu.Unlock()
+							}()
 						}
-						m := md5.Sum(data)
 						infolk.Lock()
 						filesinfo[e.Name()] = m
 						infolk.Unlock()
@@ -73,11 +97,30 @@ func handle(route, path string, isprotected bool) error {
 	fmt.Println("perparing", i, "to", len(dir))
 	for _, e := range dir[i:] {
 		if !e.IsDir() {
-			data, err := os.ReadFile(path + "/" + e.Name())
-			if err != nil {
-				return err
+			var fmd5 filemd5
+			dbmu.RLock()
+			err = db.Find(route[1:], &fmd5, "where name="+e.Name())
+			dbmu.RUnlock()
+			var m [16]byte
+			if err == nil {
+				_, err = hex.Decode(m[:], helper.StringToBytes(fmd5.Md5))
+				if err != nil {
+					panic(err)
+				}
+			} else {
+				data, err := os.ReadFile(path + "/" + e.Name())
+				if err != nil {
+					continue
+				}
+				m = md5.Sum(data)
+				fmd5.Name = e.Name()
+				fmd5.Md5 = hex.EncodeToString(m[:])
+				go func() {
+					dbmu.Lock()
+					db.Insert(route[1:], &fmd5)
+					dbmu.Unlock()
+				}()
 			}
-			m := md5.Sum(data)
 			infolk.Lock()
 			filesinfo[e.Name()] = m
 			infolk.Unlock()
@@ -204,6 +247,11 @@ func handle(route, path string, isprotected bool) error {
 			filesinfo[name] = m
 			err = os.WriteFile(path+"/"+name, buf, 0644)
 			infolk.Unlock()
+			go func() {
+				dbmu.Lock()
+				db.Insert(route[1:], &filemd5{Name: name, Md5: hex.EncodeToString(m[:])})
+				dbmu.Unlock()
+			}()
 			if err != nil {
 				http.Error(rw, "500 Internal Server Error: "+err.Error(), http.StatusInternalServerError)
 				return
