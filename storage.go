@@ -64,7 +64,7 @@ func handle(route, path string, isprotected bool) error {
 					if !e.IsDir() {
 						var fmd5 filemd5
 						dbmu.RLock()
-						err = db.Find(route[1:], &fmd5, "where name="+e.Name())
+						err = db.Find(route[1:], &fmd5, "where name='"+e.Name()+"'")
 						dbmu.RUnlock()
 						var m [16]byte
 						if err == nil {
@@ -103,7 +103,7 @@ func handle(route, path string, isprotected bool) error {
 		if !e.IsDir() {
 			var fmd5 filemd5
 			dbmu.RLock()
-			err = db.Find(route[1:], &fmd5, "where name="+e.Name())
+			err = db.Find(route[1:], &fmd5, "where name='"+e.Name()+"'")
 			dbmu.RUnlock()
 			var m [16]byte
 			if err == nil {
