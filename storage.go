@@ -61,9 +61,9 @@ func handle(route, path string, isprotected bool) error {
 				for _, e := range dir {
 					if !e.IsDir() {
 						var fmd5 filemd5
-						dbmu.RLock()
+						dbmu.Lock()
 						err = db.Find(route[1:], &fmd5, "where name="+e.Name())
-						dbmu.RUnlock()
+						dbmu.Unlock()
 						var m [16]byte
 						if err == nil {
 							_, err = hex.Decode(m[:], helper.StringToBytes(fmd5.Md5))
@@ -98,9 +98,9 @@ func handle(route, path string, isprotected bool) error {
 	for _, e := range dir[i:] {
 		if !e.IsDir() {
 			var fmd5 filemd5
-			dbmu.RLock()
+			dbmu.Lock()
 			err = db.Find(route[1:], &fmd5, "where name="+e.Name())
-			dbmu.RUnlock()
+			dbmu.Unlock()
 			var m [16]byte
 			if err == nil {
 				_, err = hex.Decode(m[:], helper.StringToBytes(fmd5.Md5))

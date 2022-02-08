@@ -8,7 +8,7 @@ import (
 
 var (
 	db   = &sql.Sqlite{DBPath: "md5.db"}
-	dbmu sync.RWMutex
+	dbmu sync.Mutex
 )
 
 type filemd5 struct {
