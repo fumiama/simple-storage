@@ -44,7 +44,9 @@ func handle(route, path string, isprotected bool) error {
 	}
 
 	fmt.Println("perparing route", route, "with", len(dir), "files in path", path, "protected:", isprotected)
+	dbmu.Lock()
 	err = db.Create(route[1:], &filemd5{})
+	dbmu.Unlock()
 	if err != nil {
 		panic(err)
 	}
@@ -61,9 +63,9 @@ func handle(route, path string, isprotected bool) error {
 				for _, e := range dir {
 					if !e.IsDir() {
 						var fmd5 filemd5
-						dbmu.Lock()
+						dbmu.RLock()
 						err = db.Find(route[1:], &fmd5, "where name="+e.Name())
-						dbmu.Unlock()
+						dbmu.RUnlock()
 						var m [16]byte
 						if err == nil {
 							_, err = hex.Decode(m[:], helper.StringToBytes(fmd5.Md5))
@@ -78,10 +80,12 @@ func handle(route, path string, isprotected bool) error {
 							m = md5.Sum(data)
 							fmd5.Name = e.Name()
 							fmd5.Md5 = hex.EncodeToString(m[:])
+							wg.Add(1)
 							go func() {
 								dbmu.Lock()
 								db.Insert(route[1:], &fmd5)
 								dbmu.Unlock()
+								wg.Done()
 							}()
 						}
 						infolk.Lock()
@@ -98,9 +102,9 @@ func handle(route, path string, isprotected bool) error {
 	for _, e := range dir[i:] {
 		if !e.IsDir() {
 			var fmd5 filemd5
-			dbmu.Lock()
+			dbmu.RLock()
 			err = db.Find(route[1:], &fmd5, "where name="+e.Name())
-			dbmu.Unlock()
+			dbmu.RUnlock()
 			var m [16]byte
 			if err == nil {
 				_, err = hex.Decode(m[:], helper.StringToBytes(fmd5.Md5))
@@ -115,10 +119,12 @@ func handle(route, path string, isprotected bool) error {
 				m = md5.Sum(data)
 				fmd5.Name = e.Name()
 				fmd5.Md5 = hex.EncodeToString(m[:])
+				wg.Add(1)
 				go func() {
 					dbmu.Lock()
 					db.Insert(route[1:], &fmd5)
 					dbmu.Unlock()
+					wg.Done()
 				}()
 			}
 			infolk.Lock()

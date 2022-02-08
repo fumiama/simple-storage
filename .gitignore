@@ -15,5 +15,6 @@
 # vendor/
 
 data
+data2
 simple-storage
 md5.db
